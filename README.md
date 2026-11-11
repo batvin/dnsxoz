@@ -9,7 +9,7 @@
 ## نصب سریع (روی سرور، با دسترسی root)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<YOUR_USER>/<YOUR_REPO>/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/batvin/dnsxoz/main/install.sh | sudo bash
 ```
 
 بعد از نصب، پنل روی پورت `8088` بالا می‌آید:
@@ -21,8 +21,8 @@ http://SERVER_IP:8088
 ## نصب دستی
 
 ```bash
-git clone https://github.com/<YOUR_USER>/<YOUR_REPO>.git
-cd <YOUR_REPO>
+git clone https://github.com/batvin/dnsxoz.git
+cd dnsxoz
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
