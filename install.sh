@@ -3,11 +3,11 @@
 # Server Optimization & DNS Test Panel — installer
 # Tested on: Ubuntu 20.04/22.04/24.04, Debian 11/12
 # Usage (as root):
-#   curl -fsSL https://raw.githubusercontent.com/<YOUR_USER>/<YOUR_REPO>/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/batvin/dnsxoz/main/install.sh | bash
 # ---------------------------------------------------------------------------
 set -e
 
-REPO_RAW_BASE="https://raw.githubusercontent.com/<YOUR_USER>/<YOUR_REPO>/main"
+REPO_RAW_BASE="https://raw.githubusercontent.com/batvin/dnsxoz/main"
 INSTALL_DIR="/opt/server-panel"
 SERVICE_NAME="server-panel"
 PANEL_PORT="${PANEL_PORT:-8088}"
