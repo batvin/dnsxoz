@@ -1,1 +1,489 @@
-PLACEHOLDER_HTML
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Server Panel</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0c0a0a;--card:#1a1212;--card2:#221616;--accent:#e63946;--accent-dim:#c1121f;--accent-glow:rgba(230,57,70,.35);--text:#f1e9e9;--muted:#9a8585;--ok:#2dd4a8;--warn:#f4a261;--danger:#e63946;--border:rgba(230,57,70,.18);--radius:14px;--sidebar-w:280px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:radial-gradient(900px 500px at 90% -5%,#3a1515 0%,transparent 55%),radial-gradient(700px 400px at -10% 80%,#2a0f0f 0%,transparent 50%),var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:14px;padding:14px 18px;background:rgba(12,10,10,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.hamburger{width:42px;height:42px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:10px;cursor:pointer}
+.hamburger span{display:block;width:20px;height:2.5px;background:var(--accent);border-radius:2px;transition:transform .25s,opacity .25s}
+.hamburger.open span:nth-child(1){transform:translateY(8.5px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:translateY(-8.5px) rotate(-45deg)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--accent-glow)}70%{box-shadow:0 0 0 12px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.top-meta{margin-right:auto;color:var(--muted);font-size:.82rem}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:150;opacity:0;pointer-events:none;transition:opacity .25s}
+.overlay.show{opacity:1;pointer-events:auto}
+.sidebar{position:fixed;top:0;right:0;height:100%;width:var(--sidebar-w);max-width:88vw;background:var(--card);border-left:1px solid var(--border);z-index:200;transform:translateX(105%);transition:transform .28s ease;display:flex;flex-direction:column;padding:20px 0}
+.sidebar.open{transform:translateX(0)}
+.sidebar-header{padding:8px 20px 18px;border-bottom:1px solid var(--border);font-weight:700;color:var(--accent)}
+.nav-item{display:flex;align-items:center;gap:12px;padding:13px 20px;color:var(--muted);cursor:pointer;border:none;background:none;width:100%;text-align:right;font-size:.95rem}
+.nav-item:hover{background:rgba(230,57,70,.08);color:var(--text)}
+.nav-item.active{background:rgba(230,57,70,.14);color:var(--accent);border-right:3px solid var(--accent)}
+.main{padding:20px 18px 40px;max-width:1100px;margin:0 auto}
+.page{display:none}.page.active{display:block}
+h2.page-title{font-size:1.25rem;margin-bottom:6px}
+.page-desc{color:var(--muted);font-size:.88rem;margin-bottom:22px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.card h3{font-size:.95rem;margin-bottom:14px}
+.gauge-wrap{text-align:center}
+.gauge{position:relative;width:110px;height:110px;margin:0 auto 10px}
+.gauge svg{transform:rotate(-90deg)}
+.gauge circle{fill:none;stroke-width:9}
+.gauge .bg{stroke:rgba(255,255,255,.08)}
+.gauge .fg{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .8s}
+.gauge .val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700}
+.gauge-label{color:var(--muted);font-size:.8rem}
+.stat-line{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed rgba(255,255,255,.07);font-size:.88rem}
+.stat-line:last-child{border-bottom:none}
+.stat-line span:last-child{color:var(--accent);font-weight:600}
+button.btn{background:linear-gradient(135deg,var(--accent),var(--accent-dim));border:none;color:#fff;font-weight:700;padding:11px 16px;border-radius:10px;cursor:pointer;font-size:.9rem;width:100%}
+button.btn:disabled{opacity:.55;cursor:wait}
+button.btn-outline{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+button.btn-sm{padding:7px 12px;font-size:.8rem;width:auto}
+.spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.72rem;font-weight:700}
+.badge.ok{background:rgba(45,212,168,.15);color:var(--ok)}
+.badge.bad{background:rgba(230,57,70,.18);color:var(--danger)}
+.badge.warn{background:rgba(244,162,97,.18);color:var(--warn)}
+.log-box{background:#0a0808;border-radius:10px;padding:10px 12px;margin-top:12px;font-family:monospace;font-size:.75rem;max-height:140px;overflow-y:auto;color:var(--muted)}
+.list-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.88rem;flex-wrap:wrap}
+.list-row .name{min-width:110px;font-weight:600}
+.list-row .ip{color:var(--muted);font-size:.78rem;font-family:monospace}
+.bar-bg{flex:1;min-width:60px;height:6px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));width:0%;border-radius:6px}
+.list-row .ms{min-width:70px;text-align:left;font-weight:600;color:var(--accent)}
+.best-banner{background:linear-gradient(135deg,rgba(230,57,70,.2),rgba(193,18,31,.12));border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.tab{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--muted);cursor:pointer;font-size:.85rem}
+.tab.active,.tab:hover{background:rgba(230,57,70,.15);color:var(--accent);border-color:var(--accent)}
+.err-banner{display:none;background:rgba(230,57,70,.15);border:1px solid var(--border);color:var(--danger);padding:10px 14px;border-radius:10px;margin-bottom:16px;font-size:.85rem}
+footer{text-align:center;color:var(--muted);font-size:.72rem;margin-top:36px;padding-bottom:12px}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <button class="hamburger" id="btn-menu" aria-label="menu" onclick="toggleMenu()"><span></span><span></span><span></span></button>
+  <div class="brand"><span class="dot"></span> پنل سرور</div>
+  <div class="top-meta" id="top-meta">در حال بارگذاری...</div>
+</header>
+<div class="overlay" id="overlay" onclick="closeMenu()"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">منوی پنل</div>
+  <button class="nav-item active" data-page="dashboard" onclick="goPage('dashboard')"><span class="icon">📊</span> داشبورد منابع</button>
+  <button class="nav-item" data-page="dns" onclick="goPage('dns')"><span class="icon">🌐</span> تست DNS و انتخاب</button>
+  <button class="nav-item" data-page="mirrors" onclick="goPage('mirrors')"><span class="icon">🪞</span> تست میرور آپدیت</button>
+  <button class="nav-item" data-page="optimize" onclick="goPage('optimize')"><span class="icon">🚀</span> بهینه‌سازی شبکه</button>
+  <button class="nav-item" data-page="system" onclick="goPage('system')"><span class="icon">ℹ️</span> اطلاعات سیستم</button>
+</aside>
+<main class="main">
+  <div class="err-banner" id="err-banner"></div>
+  <section class="page active" id="page-dashboard">
+    <h2 class="page-title">📊 مصرف منابع سرور</h2>
+    <p class="page-desc">مانیتور زنده CPU، رم، دیسک و لود</p>
+    <div class="grid" style="margin-bottom:18px">
+      <div class="card gauge-wrap"><div class="gauge"><svg viewBox="0 0 100 100" width="110" height="110"><circle class="bg" cx="50" cy="50" r="42"></circle><circle class="fg" id="g-cpu" cx="50" cy="50" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9"></circle></svg><div class="val" id="v-cpu">—</div></div><div class="gauge-label">مصرف CPU</div></div>
+      <div class="card gauge-wrap"><div class="gauge"><svg viewBox="0 0 100 100" width="110" height="110"><circle class="bg" cx="50" cy="50" r="42"></circle><circle class="fg" id="g-mem" cx="50" cy="50" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9"></circle></svg><div class="val" id="v-mem">—</div></div><div class="gauge-label">مصرف رم</div></div>
+      <div class="card gauge-wrap"><div class="gauge"><svg viewBox="0 0 100 100" width="110" height="110"><circle class="bg" cx="50" cy="50" r="42"></circle><circle class="fg" id="g-disk" cx="50" cy="50" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9"></circle></svg><div class="val" id="v-disk">—</div></div><div class="gauge-label">مصرف دیسک</div></div>
+    </div>
+    <div class="grid">
+      <div class="card"><h3>💾 حافظه</h3><div class="stat-line"><span>کل</span><span id="mem-total">—</span></div><div class="stat-line"><span>استفاده‌شده</span><span id="mem-used">—</span></div><div class="stat-line"><span>آزاد / در دسترس</span><span id="mem-avail">—</span></div></div>
+      <div class="card"><h3>💿 دیسک (ریشه)</h3><div class="stat-line"><span>کل</span><span id="disk-total">—</span></div><div class="stat-line"><span>استفاده‌شده</span><span id="disk-used">—</span></div><div class="stat-line"><span>آزاد</span><span id="disk-free">—</span></div></div>
+      <div class="card"><h3>📈 لود و شبکه</h3><div class="stat-line"><span>لود ۱ / ۵ / ۱۵ دقیقه</span><span id="load-avg">—</span></div><div class="stat-line"><span>دانلود کل (RX)</span><span id="net-rx">—</span></div><div class="stat-line"><span>آپلود کل (TX)</span><span id="net-tx">—</span></div></div>
+    </div>
+  </section>
+  <section class="page" id="page-dns">
+    <h2 class="page-title">🌐 تست DNS و انتخاب بهترین</h2>
+    <p class="page-desc">تاخیر رزولوشن روی DNSهای معروف</p>
+    <button class="btn" id="btn-dns" onclick="runDnsTest()" style="max-width:280px;margin-bottom:18px">اجرای تست DNS</button>
+    <div id="dns-best" style="display:none"></div>
+    <div class="card" style="margin-bottom:16px"><h3>نتایج</h3><div id="dns-list"><p style="color:var(--muted);font-size:.85rem">هنوز تستی اجرا نشده.</p></div></div>
+    <div class="card"><h3>📊 نمودار میانگین تاخیر (ms)</h3><canvas id="dnsChart" height="100"></canvas></div>
+  </section>
+  <section class="page" id="page-mirrors">
+    <h2 class="page-title">🪞 تست میرور آپدیت</h2>
+    <p class="page-desc">مقایسه میرورهای apt / pip / npm و اعمال بهترین</p>
+    <div class="tabs">
+      <button class="tab active" data-cat="all" onclick="setMirrorCat('all',this)">همه</button>
+      <button class="tab" data-cat="apt" onclick="setMirrorCat('apt',this)">apt</button>
+      <button class="tab" data-cat="pip" onclick="setMirrorCat('pip',this)">pip</button>
+      <button class="tab" data-cat="npm" onclick="setMirrorCat('npm',this)">npm</button>
+    </div>
+    <button class="btn" id="btn-mirror" onclick="runMirrorTest()" style="max-width:280px;margin-bottom:18px">اجرای تست میرور</button>
+    <div id="mirror-results"><p style="color:var(--muted);font-size:.85rem">هنوز تستی اجرا نشده.</p></div>
+  </section>
+  <section class="page" id="page-optimize">
+    <h2 class="page-title">🚀 بهینه‌سازی شبکه</h2>
+    <div class="card" style="max-width:480px">
+      <button class="btn" id="btn-optimize" onclick="runOptimize()">اجرای بهینه‌سازی</button>
+      <div id="opt-status" style="margin-top:12px"></div>
+      <div class="log-box" id="opt-log" style="display:none"></div>
+    </div>
+  </section>
+  <section class="page" id="page-system">
+    <h2 class="page-title">ℹ️ اطلاعات سیستم</h2>
+    <div class="card" style="max-width:480px">
+      <div class="stat-line"><span>هاست‌نیم</span><span id="sys-host">—</span></div>
+      <div class="stat-line"><span>سیستم‌عامل</span><span id="sys-os">—</span></div>
+      <div class="stat-line"><span>آپ‌تایم</span><span id="sys-uptime">—</span></div>
+      <div class="stat-line"><span>هسته‌های CPU</span><span id="sys-cpu">—</span></div>
+      <div class="stat-line"><span>DNS فعلی</span><span id="sys-dns">—</span></div>
+    </div>
+  </section>
+</main>
+<footer>Server Panel · dnsxoz</footer>
+<script>
+(function () {
+  var CIRC = 2 * Math.PI * 42;
+  var dnsChart = null;
+  var mirrorCat = "all";
+  var resourceTimer = null;
+
+  function $(id) { return document.getElementById(id); }
+
+  function showErr(msg) {
+    var el = $("err-banner");
+    if (!el) return;
+    el.style.display = "block";
+    el.textContent = msg;
+  }
+  function hideErr() {
+    var el = $("err-banner");
+    if (el) el.style.display = "none";
+  }
+
+  window.toggleMenu = function () {
+    $("sidebar").classList.toggle("open");
+    $("overlay").classList.toggle("show");
+    $("btn-menu").classList.toggle("open");
+  };
+  window.closeMenu = function () {
+    $("sidebar").classList.remove("open");
+    $("overlay").classList.remove("show");
+    $("btn-menu").classList.remove("open");
+  };
+  window.goPage = function (name) {
+    document.querySelectorAll(".page").forEach(function (p) { p.classList.remove("active"); });
+    document.querySelectorAll(".nav-item").forEach(function (n) { n.classList.remove("active"); });
+    $("page-" + name).classList.add("active");
+    document.querySelector('.nav-item[data-page="' + name + '"]').classList.add("active");
+    window.closeMenu();
+    if (name === "dashboard") startResources();
+    else stopResources();
+    if (name === "system") loadSystemPage();
+  };
+
+  function setGauge(id, percent) {
+    var el = $(id);
+    if (!el) return;
+    var p = Math.min(100, Math.max(0, Number(percent) || 0));
+    el.style.strokeDashoffset = String(CIRC - (CIRC * p / 100));
+    el.style.stroke = p >= 85 ? "#e63946" : (p >= 65 ? "#f4a261" : "#e63946");
+  }
+
+  async function loadResources() {
+    try {
+      var r = await fetch("/api/resources");
+      var text = await r.text();
+      var j;
+      try { j = JSON.parse(text); } catch (pe) {
+        showErr("پاسخ نامعتبر از API: " + text.slice(0, 120));
+        return;
+      }
+      if (!j.ok) {
+        showErr("خطای API منابع: " + (j.error || r.status));
+        return;
+      }
+      hideErr();
+      var d = j.data;
+      $("v-cpu").textContent = d.cpu_percent + "%";
+      setGauge("g-cpu", d.cpu_percent);
+      $("v-mem").textContent = d.memory.percent + "%";
+      setGauge("g-mem", d.memory.percent);
+      $("v-disk").textContent = d.disk.percent + "%";
+      setGauge("g-disk", d.disk.percent);
+      $("mem-total").textContent = d.memory.total_mb + " MB";
+      $("mem-used").textContent = d.memory.used_mb + " MB";
+      $("mem-avail").textContent = d.memory.available_mb + " MB";
+      $("disk-total").textContent = d.disk.total_gb + " GB";
+      $("disk-used").textContent = d.disk.used_gb + " GB";
+      $("disk-free").textContent = d.disk.free_gb + " GB";
+      $("load-avg").textContent = d.load["1m"] + " / " + d.load["5m"] + " / " + d.load["15m"];
+      $("net-rx").textContent = d.network.rx_gb + " GB";
+      $("net-tx").textContent = d.network.tx_gb + " GB";
+      var s = d.system;
+      $("top-meta").textContent = s.hostname + " · " + s.os + " · آپ‌تایم: " + s.uptime;
+    } catch (e) {
+      showErr("خطای ارتباط با /api/resources — " + e);
+      console.error(e);
+    }
+  }
+
+  function startResources() {
+    loadResources();
+    if (resourceTimer) clearInterval(resourceTimer);
+    resourceTimer = setInterval(loadResources, 4000);
+  }
+  function stopResources() {
+    if (resourceTimer) { clearInterval(resourceTimer); resourceTimer = null; }
+  }
+
+  window.runDnsTest = async function () {
+    var btn = $("btn-dns");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> در حال تست...';
+    try {
+      var r = await fetch("/api/dns-test", { method: "POST" });
+      var d = await r.json();
+      if (d.ok) renderDns(d.result);
+      else $("dns-list").innerHTML = '<span class="badge bad">خطا: ' + d.error + "</span>";
+    } catch (e) {
+      $("dns-list").innerHTML = '<span class="badge bad">خطای ارتباط: ' + e + "</span>";
+    }
+    btn.disabled = false;
+    btn.textContent = "اجرای تست DNS";
+  };
+
+  function renderDns(payload) {
+    var results = (payload && payload.results) || [];
+    var best = payload && payload.best;
+    var listEl = $("dns-list");
+    var bestEl = $("dns-best");
+
+    if (best) {
+      bestEl.style.display = "block";
+      bestEl.innerHTML = "";
+      var banner = document.createElement("div");
+      banner.className = "best-banner";
+      var info = document.createElement("div");
+      info.innerHTML = "بهترین DNS: <strong>" + best.name + "</strong> (" + best.ip + ") — میانگین <strong>" + best.avg_ms + " ms</strong>";
+      banner.appendChild(info);
+      var bbtn = document.createElement("button");
+      bbtn.type = "button";
+      bbtn.className = "btn btn-sm";
+      bbtn.textContent = "اعمال این DNS";
+      bbtn.addEventListener("click", function () { applyDns(best.ip); });
+      banner.appendChild(bbtn);
+      bestEl.appendChild(banner);
+    }
+
+    var maxMs = 50;
+    results.forEach(function (r) { if (r.avg_ms && r.avg_ms > maxMs) maxMs = r.avg_ms; });
+    listEl.innerHTML = "";
+    results.forEach(function (r) {
+      var pct = r.avg_ms ? Math.min(100, (r.avg_ms / maxMs) * 100) : 0;
+      var label = r.avg_ms != null ? r.avg_ms + " ms" : "ناموفق";
+      var row = document.createElement("div");
+      row.className = "list-row";
+      row.innerHTML = '<span class="name">' + r.name + '</span><span class="ip">' + r.ip + '</span><div class="bar-bg"><div class="bar-fill" style="width:' + pct + '%"></div></div><span class="ms">' + label + "</span>";
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn-sm btn-outline";
+      btn.textContent = "اعمال";
+      btn.addEventListener("click", function () { applyDns(r.ip); });
+      row.appendChild(btn);
+      listEl.appendChild(row);
+    });
+
+    if (typeof Chart === "undefined") return;
+    var ctx = $("dnsChart").getContext("2d");
+    if (dnsChart) dnsChart.destroy();
+    dnsChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: results.map(function (r) { return r.name; }),
+        datasets: [{
+          label: "میانگین تاخیر (ms)",
+          data: results.map(function (r) { return r.avg_ms || 0; }),
+          backgroundColor: "rgba(230, 57, 70, 0.55)",
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: { ticks: { color: "#9a8585" }, grid: { color: "rgba(255,255,255,.05)" } },
+          y: { ticks: { color: "#9a8585" }, grid: { color: "rgba(255,255,255,.05)" } }
+        },
+        plugins: { legend: { labels: { color: "#f1e9e9" } } }
+      }
+    });
+  }
+
+  function applyDns(ip) {
+    if (!confirm("DNS سرور به " + ip + " تغییر کند؟")) return;
+    fetch("/api/dns-apply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ primary: ip })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.ok) { alert("DNS اعمال شد: " + ip); loadSystemPage(); }
+      else alert("خطا: " + d.error);
+    }).catch(function (e) { alert("خطای ارتباط: " + e); });
+  }
+
+  window.setMirrorCat = function (cat, el) {
+    mirrorCat = cat;
+    document.querySelectorAll(".tabs .tab").forEach(function (t) { t.classList.remove("active"); });
+    el.classList.add("active");
+  };
+
+  window.runMirrorTest = async function () {
+    var btn = $("btn-mirror");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> در حال تست میرورها...';
+    var body = mirrorCat === "all" ? {} : { category: mirrorCat };
+    try {
+      var r = await fetch("/api/mirror-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      var d = await r.json();
+      if (d.ok) renderMirrors(d.result);
+      else $("mirror-results").innerHTML = '<span class="badge bad">خطا: ' + d.error + "</span>";
+    } catch (e) {
+      $("mirror-results").innerHTML = '<span class="badge bad">خطای ارتباط: ' + e + "</span>";
+    }
+    btn.disabled = false;
+    btn.textContent = "اجرای تست میرور";
+  };
+
+  function renderMirrors(payload) {
+    var cats = (payload && payload.categories) || {};
+    var order = ["apt", "pip", "npm"];
+    var box = $("mirror-results");
+    box.innerHTML = "";
+    order.forEach(function (cat) {
+      if (!cats[cat]) return;
+      var block = cats[cat];
+      var card = document.createElement("div");
+      card.className = "card";
+      card.style.marginBottom = "16px";
+      var h = document.createElement("h3");
+      h.textContent = "دسته: " + cat.toUpperCase();
+      card.appendChild(h);
+      if (block.best) {
+        var banner = document.createElement("div");
+        banner.className = "best-banner";
+        var info = document.createElement("div");
+        info.innerHTML = "بهترین: <strong>" + block.best.name + "</strong> — " + block.best.time_ms + " ms";
+        banner.appendChild(info);
+        if (cat === "pip" || cat === "npm") {
+          var ab = document.createElement("button");
+          ab.type = "button";
+          ab.className = "btn btn-sm";
+          ab.textContent = "اعمال بهترین";
+          ab.addEventListener("click", function () {
+            applyMirror(cat, block.best.url, block.best.host || "");
+          });
+          banner.appendChild(ab);
+        }
+        card.appendChild(banner);
+      }
+      var maxMs = 100;
+      (block.results || []).forEach(function (x) { if (x.time_ms && x.time_ms > maxMs) maxMs = x.time_ms; });
+      (block.results || []).forEach(function (m) {
+        var pct = m.time_ms ? Math.min(100, (m.time_ms / maxMs) * 100) : 0;
+        var row = document.createElement("div");
+        row.className = "list-row";
+        var badge = m.ok ? '<span class="badge ok">OK</span>' : '<span class="badge bad">Fail</span>';
+        var label = m.ok ? m.time_ms + " ms" : (m.error || "ناموفق");
+        row.innerHTML = '<span class="name">' + m.name + "</span>" + badge + '<div class="bar-bg"><div class="bar-fill" style="width:' + pct + '%"></div></div><span class="ms">' + label + "</span>";
+        if (m.ok && (cat === "pip" || cat === "npm")) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "btn btn-sm btn-outline";
+          b.textContent = "اعمال";
+          b.addEventListener("click", function () { applyMirror(cat, m.url, m.host || ""); });
+          row.appendChild(b);
+        }
+        card.appendChild(row);
+      });
+      box.appendChild(card);
+    });
+    if (!box.children.length) box.innerHTML = '<p style="color:var(--muted)">نتیجه‌ای نیست.</p>';
+  }
+
+  function applyMirror(category, url, host) {
+    if (category === "pip") {
+      if (!confirm("اعمال میرور pip روی venv پنل؟\n" + url)) return;
+    } else if (category === "npm") {
+      if (!confirm("تغییر registry npm؟\n" + url)) return;
+    } else {
+      alert("اعمال apt دستی است");
+      return;
+    }
+    fetch("/api/mirror-apply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category: category, url: url, host: host || null, scope: "venv" })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.ok) alert("اعمال شد\n" + ((d.result && d.result.log) || []).join("\n"));
+      else alert("خطا: " + d.error);
+    }).catch(function (e) { alert("خطای ارتباط: " + e); });
+  }
+
+  window.runOptimize = async function () {
+    var btn = $("btn-optimize");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> در حال اجرا...';
+    var statusEl = $("opt-status");
+    var logEl = $("opt-log");
+    statusEl.innerHTML = "";
+    try {
+      var r = await fetch("/api/optimize", { method: "POST" });
+      var d = await r.json();
+      if (d.ok) {
+        var bbr = d.result.bbr_active;
+        statusEl.innerHTML = '<span class="badge ' + (bbr ? "ok" : "bad") + '">' + (bbr ? "BBR فعال است" : "BBR فعال نشد") + "</span>";
+        logEl.style.display = "block";
+        logEl.innerHTML = (d.result.log || []).map(function (l) { return "> " + l; }).join("<br>");
+      } else {
+        statusEl.innerHTML = '<span class="badge bad">خطا: ' + d.error + "</span>";
+      }
+    } catch (e) {
+      statusEl.innerHTML = '<span class="badge bad">خطای ارتباط: ' + e + "</span>";
+    }
+    btn.disabled = false;
+    btn.textContent = "اجرای بهینه‌سازی";
+  };
+
+  function loadSystemPage() {
+    fetch("/api/resources").then(function (r) { return r.json(); }).then(function (j) {
+      if (!j.ok) return;
+      var s = j.data.system;
+      $("sys-host").textContent = s.hostname;
+      $("sys-os").textContent = s.os;
+      $("sys-uptime").textContent = s.uptime;
+      $("sys-cpu").textContent = s.cpu_cores;
+      $("sys-dns").textContent = (s.current_dns && s.current_dns.length) ? s.current_dns.join(", ") : "—";
+    }).catch(function () {});
+  }
+
+  function loadSaved() {
+    fetch("/api/results").then(function (r) { return r.json(); }).then(function (d) {
+      if (d.dns_tests && d.dns_tests.results) renderDns(d.dns_tests);
+      if (d.mirror_tests) renderMirrors(d.mirror_tests);
+      if (d.optimization) {
+        var bbr = d.optimization.bbr_active;
+        $("opt-status").innerHTML = '<span class="badge ' + (bbr ? "ok" : "bad") + '">' + (bbr ? "BBR فعال است" : "آخرین اجرا: BBR فعال نشد") + "</span>";
+      }
+    }).catch(function () {});
+  }
+
+  startResources();
+  loadSaved();
+})();
+</script>
+</body>
+</html>
