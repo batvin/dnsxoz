@@ -6,374 +6,121 @@
 <title>Server Panel — منابع، DNS، میرور</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-  :root {
-    --bg: #0c0a0a;
-    --card: #1a1212;
-    --card2: #221616;
-    --accent: #e63946;
-    --accent-dim: #c1121f;
-    --accent-glow: rgba(230, 57, 70, 0.35);
-    --text: #f1e9e9;
-    --muted: #9a8585;
-    --ok: #2dd4a8;
-    --warn: #f4a261;
-    --danger: #e63946;
-    --border: rgba(230, 57, 70, 0.18);
-    --radius: 14px;
-    --sidebar-w: 280px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Segoe UI', Tahoma, sans-serif;
-    background:
-      radial-gradient(900px 500px at 90% -5%, #3a1515 0%, transparent 55%),
-      radial-gradient(700px 400px at -10% 80%, #2a0f0f 0%, transparent 50%),
-      var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-  .topbar {
-    position: sticky; top: 0; z-index: 100;
-    display: flex; align-items: center; gap: 14px;
-    padding: 14px 18px;
-    background: rgba(12, 10, 10, 0.92);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border);
-  }
-  .hamburger {
-    width: 42px; height: 42px;
-    display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 10px; cursor: pointer; transition: background .2s;
-  }
-  .hamburger:hover { background: var(--card2); }
-  .hamburger span {
-    display: block; width: 20px; height: 2.5px;
-    background: var(--accent); border-radius: 2px;
-    transition: transform .25s, opacity .25s;
-  }
-  .hamburger.open span:nth-child(1) { transform: translateY(8.5px) rotate(45deg); }
-  .hamburger.open span:nth-child(2) { opacity: 0; }
-  .hamburger.open span:nth-child(3) { transform: translateY(-8.5px) rotate(-45deg); }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.05rem; }
-  .brand .dot {
-    width: 9px; height: 9px; border-radius: 50%; background: var(--accent);
-    box-shadow: 0 0 0 0 var(--accent-glow);
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 var(--accent-glow); }
-    70% { box-shadow: 0 0 0 12px transparent; }
-    100% { box-shadow: 0 0 0 0 transparent; }
-  }
-  .top-meta { margin-right: auto; color: var(--muted); font-size: .82rem; }
-  .overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,.55);
-    z-index: 150; opacity: 0; pointer-events: none; transition: opacity .25s;
-  }
-  .overlay.show { opacity: 1; pointer-events: auto; }
-  .sidebar {
-    position: fixed; top: 0; right: 0; height: 100%;
-    width: var(--sidebar-w); max-width: 88vw;
-    background: var(--card);
-    border-left: 1px solid var(--border);
-    z-index: 200;
-    transform: translateX(105%);
-    transition: transform .28s ease;
-    display: flex; flex-direction: column;
-    padding: 20px 0;
-  }
-  .sidebar.open { transform: translateX(0); }
-  .sidebar-header {
-    padding: 8px 20px 18px;
-    border-bottom: 1px solid var(--border);
-    font-weight: 700; color: var(--accent);
-  }
-  .nav-item {
-    display: flex; align-items: center; gap: 12px;
-    padding: 13px 20px; color: var(--muted);
-    cursor: pointer; border: none; background: none;
-    width: 100%; text-align: right; font-size: .95rem;
-    transition: background .15s, color .15s;
-  }
-  .nav-item:hover { background: rgba(230,57,70,.08); color: var(--text); }
-  .nav-item.active {
-    background: rgba(230,57,70,.14);
-    color: var(--accent);
-    border-right: 3px solid var(--accent);
-  }
-  .nav-item .icon { font-size: 1.15rem; width: 24px; text-align: center; }
-  .main { padding: 20px 18px 40px; max-width: 1100px; margin: 0 auto; }
-  .page { display: none; }
-  .page.active { display: block; animation: fadeIn .35s ease; }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: none; }
-  }
-  h2.page-title {
-    font-size: 1.25rem; margin-bottom: 6px;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .page-desc { color: var(--muted); font-size: .88rem; margin-bottom: 22px; }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 16px;
-  }
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 18px;
-    box-shadow: 0 8px 28px rgba(0,0,0,.35);
-  }
-  .card h3 {
-    font-size: .95rem; margin-bottom: 14px;
-    display: flex; align-items: center; gap: 8px; color: var(--text);
-  }
-  .gauge-wrap { text-align: center; }
-  .gauge {
-    position: relative; width: 110px; height: 110px; margin: 0 auto 10px;
-  }
-  .gauge svg { transform: rotate(-90deg); }
-  .gauge circle { fill: none; stroke-width: 9; }
-  .gauge .bg { stroke: rgba(255,255,255,.08); }
-  .gauge .fg {
-    stroke: var(--accent);
-    stroke-linecap: round;
-    transition: stroke-dashoffset .8s ease;
-  }
-  .gauge .val {
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.25rem; font-weight: 700;
-  }
-  .gauge-label { color: var(--muted); font-size: .8rem; }
-  .stat-line {
-    display: flex; justify-content: space-between;
-    padding: 7px 0; border-bottom: 1px dashed rgba(255,255,255,.07);
-    font-size: .88rem;
-  }
-  .stat-line:last-child { border-bottom: none; }
-  .stat-line span:last-child { color: var(--accent); font-weight: 600; }
-  button.btn {
-    background: linear-gradient(135deg, var(--accent), var(--accent-dim));
-    border: none; color: #fff; font-weight: 700;
-    padding: 11px 16px; border-radius: 10px; cursor: pointer;
-    font-size: .9rem; width: 100%;
-    transition: transform .15s, box-shadow .15s;
-  }
-  button.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 22px var(--accent-glow);
-  }
-  button.btn:disabled { opacity: .55; cursor: wait; transform: none; box-shadow: none; }
-  button.btn-outline {
-    background: transparent;
-    border: 1px solid var(--accent);
-    color: var(--accent);
-  }
-  button.btn-outline:hover {
-    background: rgba(230,57,70,.12);
-    box-shadow: none;
-  }
-  button.btn-sm { padding: 7px 12px; font-size: .8rem; width: auto; }
-  .spinner {
-    width: 15px; height: 15px;
-    border: 2px solid rgba(255,255,255,.35);
-    border-top-color: #fff; border-radius: 50%;
-    display: inline-block; animation: spin .7s linear infinite;
-    margin-right: 6px; vertical-align: middle;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .badge {
-    display: inline-block; padding: 3px 9px; border-radius: 20px;
-    font-size: .72rem; font-weight: 700;
-  }
-  .badge.ok { background: rgba(45,212,168,.15); color: var(--ok); }
-  .badge.bad { background: rgba(230,57,70,.18); color: var(--danger); }
-  .badge.warn { background: rgba(244,162,97,.18); color: var(--warn); }
-  .log-box {
-    background: #0a0808; border-radius: 10px; padding: 10px 12px;
-    margin-top: 12px; font-family: monospace; font-size: .75rem;
-    max-height: 140px; overflow-y: auto; color: var(--muted); line-height: 1.65;
-    border: 1px solid rgba(255,255,255,.05);
-  }
-  .list-row {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.06);
-    font-size: .88rem; flex-wrap: wrap;
-  }
-  .list-row:last-child { border-bottom: none; }
-  .list-row .name { min-width: 110px; font-weight: 600; }
-  .list-row .ip { color: var(--muted); font-size: .78rem; font-family: monospace; }
-  .bar-bg {
-    flex: 1; min-width: 60px; height: 6px;
-    background: rgba(255,255,255,.08); border-radius: 6px; overflow: hidden;
-  }
-  .bar-fill {
-    height: 100%; background: linear-gradient(90deg, var(--accent-dim), var(--accent));
-    width: 0%; transition: width .9s ease; border-radius: 6px;
-  }
-  .list-row .ms { min-width: 70px; text-align: left; font-weight: 600; color: var(--accent); }
-  .best-banner {
-    background: linear-gradient(135deg, rgba(230,57,70,.2), rgba(193,18,31,.12));
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 16px; margin-bottom: 16px;
-    display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
-  }
-  .best-banner strong { color: var(--accent); }
-  .tabs {
-    display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
-  }
-  .tab {
-    padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border);
-    background: var(--card2); color: var(--muted); cursor: pointer;
-    font-size: .85rem; transition: all .15s;
-  }
-  .tab.active, .tab:hover {
-    background: rgba(230,57,70,.15); color: var(--accent); border-color: var(--accent);
-  }
-  canvas { max-height: 220px; }
-  footer {
-    text-align: center; color: var(--muted); font-size: .72rem;
-    margin-top: 36px; padding-bottom: 12px;
-  }
-  @media (max-width: 600px) {
-    .main { padding: 14px 12px 30px; }
-    .gauge { width: 90px; height: 90px; }
-  }
+:root{--bg:#0c0a0a;--card:#1a1212;--card2:#221616;--accent:#e63946;--accent-dim:#c1121f;--accent-glow:rgba(230,57,70,.35);--text:#f1e9e9;--muted:#9a8585;--ok:#2dd4a8;--warn:#f4a261;--danger:#e63946;--border:rgba(230,57,70,.18);--radius:14px;--sidebar-w:280px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:radial-gradient(900px 500px at 90% -5%,#3a1515 0%,transparent 55%),radial-gradient(700px 400px at -10% 80%,#2a0f0f 0%,transparent 50%),var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:14px;padding:14px 18px;background:rgba(12,10,10,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.hamburger{width:42px;height:42px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:10px;cursor:pointer}
+.hamburger span{display:block;width:20px;height:2.5px;background:var(--accent);border-radius:2px;transition:transform .25s,opacity .25s}
+.hamburger.open span:nth-child(1){transform:translateY(8.5px) rotate(45deg)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:translateY(-8.5px) rotate(-45deg)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05rem}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--accent-glow)}70%{box-shadow:0 0 0 12px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.top-meta{margin-right:auto;color:var(--muted);font-size:.82rem}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:150;opacity:0;pointer-events:none;transition:opacity .25s}
+.overlay.show{opacity:1;pointer-events:auto}
+.sidebar{position:fixed;top:0;right:0;height:100%;width:var(--sidebar-w);max-width:88vw;background:var(--card);border-left:1px solid var(--border);z-index:200;transform:translateX(105%);transition:transform .28s ease;display:flex;flex-direction:column;padding:20px 0}
+.sidebar.open{transform:translateX(0)}
+.sidebar-header{padding:8px 20px 18px;border-bottom:1px solid var(--border);font-weight:700;color:var(--accent)}
+.nav-item{display:flex;align-items:center;gap:12px;padding:13px 20px;color:var(--muted);cursor:pointer;border:none;background:none;width:100%;text-align:right;font-size:.95rem}
+.nav-item:hover{background:rgba(230,57,70,.08);color:var(--text)}
+.nav-item.active{background:rgba(230,57,70,.14);color:var(--accent);border-right:3px solid var(--accent)}
+.nav-item .icon{font-size:1.15rem;width:24px;text-align:center}
+.main{padding:20px 18px 40px;max-width:1100px;margin:0 auto}
+.page{display:none}.page.active{display:block;animation:fadeIn .35s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+h2.page-title{font-size:1.25rem;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.page-desc{color:var(--muted);font-size:.88rem;margin-bottom:22px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.card h3{font-size:.95rem;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.gauge-wrap{text-align:center}.gauge{position:relative;width:110px;height:110px;margin:0 auto 10px}.gauge svg{transform:rotate(-90deg)}.gauge circle{fill:none;stroke-width:9}.gauge .bg{stroke:rgba(255,255,255,.08)}.gauge .fg{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .8s ease}.gauge .val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700}.gauge-label{color:var(--muted);font-size:.8rem}
+.stat-line{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed rgba(255,255,255,.07);font-size:.88rem}.stat-line:last-child{border-bottom:none}.stat-line span:last-child{color:var(--accent);font-weight:600}
+button.btn{background:linear-gradient(135deg,var(--accent),var(--accent-dim));border:none;color:#fff;font-weight:700;padding:11px 16px;border-radius:10px;cursor:pointer;font-size:.9rem;width:100%;transition:transform .15s,box-shadow .15s}
+button.btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px var(--accent-glow)}
+button.btn:disabled{opacity:.55;cursor:wait;transform:none;box-shadow:none}
+button.btn-outline{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+button.btn-outline:hover{background:rgba(230,57,70,.12);box-shadow:none}
+button.btn-sm{padding:7px 12px;font-size:.8rem;width:auto}
+.spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.72rem;font-weight:700}
+.badge.ok{background:rgba(45,212,168,.15);color:var(--ok)}.badge.bad{background:rgba(230,57,70,.18);color:var(--danger)}.badge.warn{background:rgba(244,162,97,.18);color:var(--warn)}
+.log-box{background:#0a0808;border-radius:10px;padding:10px 12px;margin-top:12px;font-family:monospace;font-size:.75rem;max-height:140px;overflow-y:auto;color:var(--muted);line-height:1.65;border:1px solid rgba(255,255,255,.05)}
+.list-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.88rem;flex-wrap:wrap}
+.list-row:last-child{border-bottom:none}.list-row .name{min-width:110px;font-weight:600}.list-row .ip{color:var(--muted);font-size:.78rem;font-family:monospace}
+.bar-bg{flex:1;min-width:60px;height:6px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));width:0%;transition:width .9s ease;border-radius:6px}
+.list-row .ms{min-width:70px;text-align:left;font-weight:600;color:var(--accent)}
+.best-banner{background:linear-gradient(135deg,rgba(230,57,70,.2),rgba(193,18,31,.12));border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.best-banner strong{color:var(--accent)}
+.tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.tab{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--muted);cursor:pointer;font-size:.85rem}
+.tab.active,.tab:hover{background:rgba(230,57,70,.15);color:var(--accent);border-color:var(--accent)}
+canvas{max-height:220px}footer{text-align:center;color:var(--muted);font-size:.72rem;margin-top:36px;padding-bottom:12px}
+@media(max-width:600px){.main{padding:14px 12px 30px}.gauge{width:90px;height:90px}}
 </style>
 </head>
 <body>
 <header class="topbar">
-  <button class="hamburger" id="btn-menu" aria-label="منو" onclick="toggleMenu()">
-    <span></span><span></span><span></span>
-  </button>
+  <button class="hamburger" id="btn-menu" aria-label="منو" onclick="toggleMenu()"><span></span><span></span><span></span></button>
   <div class="brand"><span class="dot"></span> پنل سرور</div>
   <div class="top-meta" id="top-meta">در حال بارگذاری...</div>
 </header>
 <div class="overlay" id="overlay" onclick="closeMenu()"></div>
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">منوی پنل</div>
-  <button class="nav-item active" data-page="dashboard" onclick="goPage('dashboard')">
-    <span class="icon">📊</span> داشبورد منابع
-  </button>
-  <button class="nav-item" data-page="dns" onclick="goPage('dns')">
-    <span class="icon">🌐</span> تست DNS و انتخاب
-  </button>
-  <button class="nav-item" data-page="mirrors" onclick="goPage('mirrors')">
-    <span class="icon">🪞</span> تست میرور آپدیت
-  </button>
-  <button class="nav-item" data-page="optimize" onclick="goPage('optimize')">
-    <span class="icon">🚀</span> بهینه‌سازی شبکه
-  </button>
-  <button class="nav-item" data-page="system" onclick="goPage('system')">
-    <span class="icon">ℹ️</span> اطلاعات سیستم
-  </button>
+  <button class="nav-item active" data-page="dashboard" onclick="goPage('dashboard')"><span class="icon">📊</span> داشبورد منابع</button>
+  <button class="nav-item" data-page="dns" onclick="goPage('dns')"><span class="icon">🌐</span> تست DNS و انتخاب</button>
+  <button class="nav-item" data-page="mirrors" onclick="goPage('mirrors')"><span class="icon">🪞</span> تست میرور آپدیت</button>
+  <button class="nav-item" data-page="optimize" onclick="goPage('optimize')"><span class="icon">🚀</span> بهینه‌سازی شبکه</button>
+  <button class="nav-item" data-page="system" onclick="goPage('system')"><span class="icon">ℹ️</span> اطلاعات سیستم</button>
 </aside>
 <main class="main">
   <section class="page active" id="page-dashboard">
     <h2 class="page-title">📊 مصرف منابع سرور</h2>
-    <p class="page-desc">مانیتور زنده CPU، رم، دیسک و لود — هر چند ثانیه به‌روز می‌شود</p>
-    <div class="grid" style="margin-bottom:18px;">
-      <div class="card gauge-wrap">
-        <div class="gauge">
-          <svg viewBox="0 0 100 100" width="110" height="110">
-            <circle class="bg" cx="50" cy="50" r="42"></circle>
-            <circle class="fg" id="g-cpu" cx="50" cy="50" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9"></circle>
-          </svg>
-          <div class="val" id="v-cpu">—</div>
-        </div>
-        <div class="gauge-label">مصرف CPU</div>
-      </div>
-      <div class="card gauge-wrap">
-        <div class="gauge">
-          <svg viewBox="0 0 100 100" width="110" height="110">
-            <circle class="bg" cx="50" cy="50" r="42"></circle>
-            <circle class="fg" id="g-mem" cx="50" cy="50" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9"></circle>
-          </svg>
-          <div class="val" id="v-mem">—</div>
-        </div>
-        <div class="gauge-label">مصرف رم</div>
-      </div>
-      <div class="card gauge-wrap">
-        <div class="gauge">
-          <svg viewBox="0 0 100 100" width="110" height="110">
-            <circle class="bg" cx="50" cy="50" r="42"></circle>
-            <circle class="fg" id="g-disk" cx="50" cy="50" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9"></circle>
-          </svg>
-          <div class="val" id="v-disk">—</div>
-        </div>
-        <div class="gauge-label">مصرف دیسک</div>
-      </div>
+    <p class="page-desc">مانیتور زنده CPU، رم، دیسک و لود</p>
+    <div class="grid" style="margin-bottom:18px">
+      <div class="card gauge-wrap"><div class="gauge"><svg viewBox="0 0 100 100" width="110" height="110"><circle class="bg" cx="50" cy="50" r="42"></circle><circle class="fg" id="g-cpu" cx="50" cy="50" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9"></circle></svg><div class="val" id="v-cpu">—</div></div><div class="gauge-label">مصرف CPU</div></div>
+      <div class="card gauge-wrap"><div class="gauge"><svg viewBox="0 0 100 100" width="110" height="110"><circle class="bg" cx="50" cy="50" r="42"></circle><circle class="fg" id="g-mem" cx="50" cy="50" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9"></circle></svg><div class="val" id="v-mem">—</div></div><div class="gauge-label">مصرف رم</div></div>
+      <div class="card gauge-wrap"><div class="gauge"><svg viewBox="0 0 100 100" width="110" height="110"><circle class="bg" cx="50" cy="50" r="42"></circle><circle class="fg" id="g-disk" cx="50" cy="50" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9"></circle></svg><div class="val" id="v-disk">—</div></div><div class="gauge-label">مصرف دیسک</div></div>
     </div>
     <div class="grid">
-      <div class="card">
-        <h3>💾 حافظه</h3>
-        <div class="stat-line"><span>کل</span><span id="mem-total">—</span></div>
-        <div class="stat-line"><span>استفاده‌شده</span><span id="mem-used">—</span></div>
-        <div class="stat-line"><span>آزاد / در دسترس</span><span id="mem-avail">—</span></div>
-      </div>
-      <div class="card">
-        <h3>💿 دیسک (ریشه)</h3>
-        <div class="stat-line"><span>کل</span><span id="disk-total">—</span></div>
-        <div class="stat-line"><span>استفاده‌شده</span><span id="disk-used">—</span></div>
-        <div class="stat-line"><span>آزاد</span><span id="disk-free">—</span></div>
-      </div>
-      <div class="card">
-        <h3>📈 لود و شبکه</h3>
-        <div class="stat-line"><span>لود ۱ / ۵ / ۱۵ دقیقه</span><span id="load-avg">—</span></div>
-        <div class="stat-line"><span>دانلود کل (RX)</span><span id="net-rx">—</span></div>
-        <div class="stat-line"><span>آپلود کل (TX)</span><span id="net-tx">—</span></div>
-      </div>
+      <div class="card"><h3>💾 حافظه</h3><div class="stat-line"><span>کل</span><span id="mem-total">—</span></div><div class="stat-line"><span>استفاده‌شده</span><span id="mem-used">—</span></div><div class="stat-line"><span>آزاد / در دسترس</span><span id="mem-avail">—</span></div></div>
+      <div class="card"><h3>💿 دیسک (ریشه)</h3><div class="stat-line"><span>کل</span><span id="disk-total">—</span></div><div class="stat-line"><span>استفاده‌شده</span><span id="disk-used">—</span></div><div class="stat-line"><span>آزاد</span><span id="disk-free">—</span></div></div>
+      <div class="card"><h3>📈 لود و شبکه</h3><div class="stat-line"><span>لود ۱ / ۵ / ۱۵ دقیقه</span><span id="load-avg">—</span></div><div class="stat-line"><span>دانلود کل (RX)</span><span id="net-rx">—</span></div><div class="stat-line"><span>آپلود کل (TX)</span><span id="net-tx">—</span></div></div>
     </div>
   </section>
   <section class="page" id="page-dns">
     <h2 class="page-title">🌐 تست DNS و انتخاب بهترین</h2>
-    <p class="page-desc">تاخیر رزولوشن روی DNSهای معروف (از جمله Shecan و Electro) اندازه‌گیری می‌شود. می‌توانید بهترین را اعمال کنید.</p>
-    <button class="btn" id="btn-dns" onclick="runDnsTest()" style="max-width:280px;margin-bottom:18px;">اجرای تست DNS</button>
-    <div id="dns-best" style="display:none;"></div>
-    <div class="card" style="margin-bottom:16px;">
-      <h3>نتایج</h3>
-      <div id="dns-list"><p style="color:var(--muted);font-size:.85rem;">هنوز تستی اجرا نشده.</p></div>
-    </div>
-    <div class="card">
-      <h3>📊 نمودار میانگین تاخیر (ms)</h3>
-      <canvas id="dnsChart" height="100"></canvas>
-    </div>
+    <p class="page-desc">تاخیر رزولوشن روی DNSهای معروف. بهترین را می‌توانید اعمال کنید.</p>
+    <button class="btn" id="btn-dns" onclick="runDnsTest()" style="max-width:280px;margin-bottom:18px">اجرای تست DNS</button>
+    <div id="dns-best" style="display:none"></div>
+    <div class="card" style="margin-bottom:16px"><h3>نتایج</h3><div id="dns-list"><p style="color:var(--muted);font-size:.85rem">هنوز تستی اجرا نشده.</p></div></div>
+    <div class="card"><h3>📊 نمودار میانگین تاخیر (ms)</h3><canvas id="dnsChart" height="100"></canvas></div>
   </section>
   <section class="page" id="page-mirrors">
     <h2 class="page-title">🪞 تست میرور آپدیت</h2>
-    <p class="page-desc">سرعت دسترسی به میرورهای apt، pip و npm را مقایسه کنید تا برای آپدیت سرور و پکیج‌ها بهترین را انتخاب کنید.</p>
+    <p class="page-desc">سرعت میرورهای apt، pip و npm را مقایسه کنید. برای pip/npm می‌توانید بهترین را با یک کلیک روی venv پنل (یا npm) اعمال کنید — مثل Tsinghua که مشکل نصب را حل کرد.</p>
     <div class="tabs">
-      <button class="tab active" data-cat="all" onclick="setMirrorCat('all', this)">همه</button>
-      <button class="tab" data-cat="apt" onclick="setMirrorCat('apt', this)">apt / سیستم</button>
-      <button class="tab" data-cat="pip" onclick="setMirrorCat('pip', this)">pip / پایتون</button>
-      <button class="tab" data-cat="npm" onclick="setMirrorCat('npm', this)">npm</button>
+      <button class="tab active" data-cat="all" onclick="setMirrorCat('all',this)">همه</button>
+      <button class="tab" data-cat="apt" onclick="setMirrorCat('apt',this)">apt / سیستم</button>
+      <button class="tab" data-cat="pip" onclick="setMirrorCat('pip',this)">pip / پایتون</button>
+      <button class="tab" data-cat="npm" onclick="setMirrorCat('npm',this)">npm</button>
     </div>
-    <button class="btn" id="btn-mirror" onclick="runMirrorTest()" style="max-width:280px;margin-bottom:18px;">اجرای تست میرور</button>
-    <div id="mirror-results">
-      <p style="color:var(--muted);font-size:.85rem;">هنوز تستی اجرا نشده. دسته مورد نظر را انتخاب و تست را بزنید.</p>
-    </div>
+    <button class="btn" id="btn-mirror" onclick="runMirrorTest()" style="max-width:280px;margin-bottom:18px">اجرای تست میرور</button>
+    <div id="mirror-results"><p style="color:var(--muted);font-size:.85rem">هنوز تستی اجرا نشده.</p></div>
   </section>
   <section class="page" id="page-optimize">
     <h2 class="page-title">🚀 بهینه‌سازی شبکه</h2>
-    <p class="page-desc">فعال‌سازی BBR، تیونینگ بافرهای TCP، file descriptors و پارامترهای sysctl برای سرعت بهتر.</p>
-    <div class="card" style="max-width:480px;">
-      <h3>اعمال تنظیمات</h3>
-      <p style="color:var(--muted);font-size:.85rem;margin-bottom:12px;">تنظیمات در <code>/etc/sysctl.d/99-server-panel.conf</code> نوشته می‌شوند و بلافاصله اعمال می‌گردند.</p>
-      <button class="btn" id="btn-optimize" onclick="runOptimize()">اجرای بهینه‌سازی</button>
-      <div id="opt-status" style="margin-top:12px;"></div>
-      <div class="log-box" id="opt-log" style="display:none;"></div>
-    </div>
+    <p class="page-desc">فعال‌سازی BBR و تیونینگ TCP.</p>
+    <div class="card" style="max-width:480px"><h3>اعمال تنظیمات</h3><button class="btn" id="btn-optimize" onclick="runOptimize()">اجرای بهینه‌سازی</button><div id="opt-status" style="margin-top:12px"></div><div class="log-box" id="opt-log" style="display:none"></div></div>
   </section>
   <section class="page" id="page-system">
     <h2 class="page-title">ℹ️ اطلاعات سیستم</h2>
-    <p class="page-desc">خلاصه وضعیت سرور و DNS فعلی</p>
-    <div class="card" style="max-width:480px;">
+    <div class="card" style="max-width:480px">
       <div class="stat-line"><span>هاست‌نیم</span><span id="sys-host">—</span></div>
       <div class="stat-line"><span>سیستم‌عامل</span><span id="sys-os">—</span></div>
       <div class="stat-line"><span>آپ‌تایم</span><span id="sys-uptime">—</span></div>
@@ -384,224 +131,25 @@
 </main>
 <footer>Server Panel · dnsxoz · تم قرمز</footer>
 <script>
-const CIRC = 2 * Math.PI * 42;
-let dnsChart = null;
-let mirrorCat = 'all';
-let resourceTimer = null;
-function toggleMenu() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('overlay').classList.toggle('show');
-  document.getElementById('btn-menu').classList.toggle('open');
-}
-function closeMenu() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('overlay').classList.remove('show');
-  document.getElementById('btn-menu').classList.remove('open');
-}
-function goPage(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
-  document.querySelector('.nav-item[data-page="' + name + '"]').classList.add('active');
-  closeMenu();
-  if (name === 'dashboard') startResources();
-  else stopResources();
-  if (name === 'system') loadSystemPage();
-}
-function setGauge(id, percent) {
-  const el = document.getElementById(id);
-  const offset = CIRC - (CIRC * Math.min(100, Math.max(0, percent)) / 100);
-  el.style.strokeDashoffset = offset;
-  if (percent >= 85) el.style.stroke = '#e63946';
-  else if (percent >= 65) el.style.stroke = '#f4a261';
-  else el.style.stroke = '#e63946';
-}
-async function loadResources() {
-  try {
-    const r = await fetch('/api/resources');
-    const j = await r.json();
-    if (!j.ok) return;
-    const d = j.data;
-    document.getElementById('v-cpu').textContent = d.cpu_percent + '%';
-    setGauge('g-cpu', d.cpu_percent);
-    document.getElementById('v-mem').textContent = d.memory.percent + '%';
-    setGauge('g-mem', d.memory.percent);
-    document.getElementById('v-disk').textContent = d.disk.percent + '%';
-    setGauge('g-disk', d.disk.percent);
-    document.getElementById('mem-total').textContent = d.memory.total_mb + ' MB';
-    document.getElementById('mem-used').textContent = d.memory.used_mb + ' MB';
-    document.getElementById('mem-avail').textContent = d.memory.available_mb + ' MB';
-    document.getElementById('disk-total').textContent = d.disk.total_gb + ' GB';
-    document.getElementById('disk-used').textContent = d.disk.used_gb + ' GB';
-    document.getElementById('disk-free').textContent = d.disk.free_gb + ' GB';
-    document.getElementById('load-avg').textContent = d.load['1m'] + ' / ' + d.load['5m'] + ' / ' + d.load['15m'];
-    document.getElementById('net-rx').textContent = d.network.rx_gb + ' GB';
-    document.getElementById('net-tx').textContent = d.network.tx_gb + ' GB';
-    const s = d.system;
-    document.getElementById('top-meta').textContent = s.hostname + ' · ' + s.os + ' · آپ‌تایم: ' + s.uptime;
-  } catch (e) { console.error(e); }
-}
-function startResources() {
-  loadResources();
-  if (resourceTimer) clearInterval(resourceTimer);
-  resourceTimer = setInterval(loadResources, 4000);
-}
-function stopResources() {
-  if (resourceTimer) { clearInterval(resourceTimer); resourceTimer = null; }
-}
-async function runDnsTest() {
-  const btn = document.getElementById('btn-dns');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> در حال تست...';
-  try {
-    const r = await fetch('/api/dns-test', { method: 'POST' });
-    const d = await r.json();
-    if (d.ok) renderDns(d.result);
-    else document.getElementById('dns-list').innerHTML = '<span class="badge bad">خطا: ' + d.error + '</span>';
-  } catch (e) {
-    document.getElementById('dns-list').innerHTML = '<span class="badge bad">خطای ارتباط: ' + e + '</span>';
-  }
-  btn.disabled = false;
-  btn.textContent = 'اجرای تست DNS';
-}
-function renderDns(payload) {
-  const results = payload.results || [];
-  const best = payload.best;
-  const listEl = document.getElementById('dns-list');
-  const bestEl = document.getElementById('dns-best');
-  if (best) {
-    bestEl.style.display = 'block';
-    bestEl.innerHTML = '<div class="best-banner"><div>بهترین DNS: <strong>' + best.name + '</strong> <span class="ip">(' + best.ip + ')</span> — میانگین <strong>' + best.avg_ms + ' ms</strong> · موفقیت ' + best.success_rate + '%</div><button class="btn btn-sm" onclick="applyDns(\'' + best.ip + '\')">اعمال این DNS</button></div>';
-  }
-  const maxMs = Math.max.apply(null, results.map(function(r){ return r.avg_ms || 0; }).concat([50]));
-  listEl.innerHTML = results.map(function(r) {
-    const pct = r.avg_ms ? Math.min(100, (r.avg_ms / maxMs) * 100) : 0;
-    const label = r.avg_ms != null ? r.avg_ms + ' ms' : 'ناموفق';
-    return '<div class="list-row"><span class="name">' + r.name + '</span><span class="ip">' + r.ip + '</span><div class="bar-bg"><div class="bar-fill" style="width:' + pct + '%"></div></div><span class="ms">' + label + '</span><button class="btn btn-sm btn-outline" onclick="applyDns(\'' + r.ip + '\')">اعمال</button></div>';
-  }).join('');
-  const labels = results.map(function(r){ return r.name; });
-  const data = results.map(function(r){ return r.avg_ms || 0; });
-  const ctx = document.getElementById('dnsChart').getContext('2d');
-  if (dnsChart) dnsChart.destroy();
-  dnsChart = new Chart(ctx, {
-    type: 'bar',
-    data: { labels: labels, datasets: [{ label: 'میانگین تاخیر (ms)', data: data, backgroundColor: 'rgba(230, 57, 70, 0.55)', borderColor: 'rgba(230, 57, 70, 0.9)', borderWidth: 1, borderRadius: 6 }] },
-    options: {
-      responsive: true,
-      animation: { duration: 800, easing: 'easeOutQuart' },
-      scales: {
-        x: { ticks: { color: '#9a8585' }, grid: { color: 'rgba(255,255,255,.05)' } },
-        y: { ticks: { color: '#9a8585' }, grid: { color: 'rgba(255,255,255,.05)' } }
-      },
-      plugins: { legend: { labels: { color: '#f1e9e9' } } }
-    }
-  });
-}
-async function applyDns(ip) {
-  if (!confirm('DNS سرور به ' + ip + ' تغییر کند؟\n(فایل /etc/resolv.conf بازنویسی می‌شود)')) return;
-  try {
-    const r = await fetch('/api/dns-apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ primary: ip }) });
-    const d = await r.json();
-    if (d.ok) { alert('DNS با موفقیت اعمال شد: ' + ip); loadSystemPage(); }
-    else alert('خطا: ' + d.error);
-  } catch (e) { alert('خطای ارتباط: ' + e); }
-}
-function setMirrorCat(cat, el) {
-  mirrorCat = cat;
-  document.querySelectorAll('.tabs .tab').forEach(function(t){ t.classList.remove('active'); });
-  el.classList.add('active');
-}
-async function runMirrorTest() {
-  const btn = document.getElementById('btn-mirror');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> در حال تست میرورها...';
-  const body = mirrorCat === 'all' ? {} : { category: mirrorCat };
-  try {
-    const r = await fetch('/api/mirror-test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const d = await r.json();
-    if (d.ok) renderMirrors(d.result);
-    else document.getElementById('mirror-results').innerHTML = '<span class="badge bad">خطا: ' + d.error + '</span>';
-  } catch (e) {
-    document.getElementById('mirror-results').innerHTML = '<span class="badge bad">خطای ارتباط: ' + e + '</span>';
-  }
-  btn.disabled = false;
-  btn.textContent = 'اجرای تست میرور';
-}
-function renderMirrors(payload) {
-  const cats = payload.categories || {};
-  const order = ['apt', 'pip', 'npm'];
-  let html = '';
-  for (let i = 0; i < order.length; i++) {
-    const cat = order[i];
-    if (!cats[cat]) continue;
-    const block = cats[cat];
-    const best = block.best;
-    html += '<div class="card" style="margin-bottom:16px;"><h3>دسته: ' + cat.toUpperCase() + '</h3>';
-    if (best) {
-      html += '<div class="best-banner" style="margin-bottom:10px;">بهترین: <strong>' + best.name + '</strong> — ' + best.time_ms + ' ms <code style="font-size:.75rem;color:var(--muted);margin-right:8px;">' + best.url + '</code></div>';
-    }
-    const maxMs = Math.max.apply(null, block.results.map(function(x){ return x.time_ms || 0; }).concat([100]));
-    html += block.results.map(function(m) {
-      const pct = m.time_ms ? Math.min(100, (m.time_ms / maxMs) * 100) : 0;
-      const label = m.ok ? m.time_ms + ' ms' : (m.error || 'ناموفق');
-      const badge = m.ok ? '<span class="badge ok">OK</span>' : '<span class="badge bad">Fail</span>';
-      return '<div class="list-row"><span class="name">' + m.name + '</span>' + badge + '<div class="bar-bg"><div class="bar-fill" style="width:' + pct + '%"></div></div><span class="ms">' + label + '</span></div>';
-    }).join('');
-    html += '</div>';
-  }
-  document.getElementById('mirror-results').innerHTML = html || '<p style="color:var(--muted)">نتیجه‌ای نیست.</p>';
-}
-async function runOptimize() {
-  const btn = document.getElementById('btn-optimize');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> در حال اجرا...';
-  const statusEl = document.getElementById('opt-status');
-  const logEl = document.getElementById('opt-log');
-  statusEl.innerHTML = '';
-  try {
-    const r = await fetch('/api/optimize', { method: 'POST' });
-    const d = await r.json();
-    if (d.ok) {
-      const bbr = d.result.bbr_active;
-      statusEl.innerHTML = '<span class="badge ' + (bbr ? 'ok' : 'bad') + '">' + (bbr ? 'BBR فعال است' : 'BBR فعال نشد') + '</span>';
-      logEl.style.display = 'block';
-      logEl.innerHTML = (d.result.log || []).map(function(l){ return '> ' + l; }).join('<br>');
-    } else {
-      statusEl.innerHTML = '<span class="badge bad">خطا: ' + d.error + '</span>';
-    }
-  } catch (e) {
-    statusEl.innerHTML = '<span class="badge bad">خطای ارتباط: ' + e + '</span>';
-  }
-  btn.disabled = false;
-  btn.textContent = 'اجرای بهینه‌سازی';
-}
-async function loadSystemPage() {
-  try {
-    const r = await fetch('/api/resources');
-    const j = await r.json();
-    if (!j.ok) return;
-    const s = j.data.system;
-    document.getElementById('sys-host').textContent = s.hostname;
-    document.getElementById('sys-os').textContent = s.os;
-    document.getElementById('sys-uptime').textContent = s.uptime;
-    document.getElementById('sys-cpu').textContent = s.cpu_cores;
-    document.getElementById('sys-dns').textContent = (s.current_dns && s.current_dns.length) ? s.current_dns.join(', ') : '—';
-  } catch (e) {}
-}
-async function loadSaved() {
-  try {
-    const r = await fetch('/api/results');
-    const d = await r.json();
-    if (d.dns_tests && d.dns_tests.results) renderDns(d.dns_tests);
-    if (d.mirror_tests) renderMirrors(d.mirror_tests);
-    if (d.optimization) {
-      const bbr = d.optimization.bbr_active;
-      document.getElementById('opt-status').innerHTML = '<span class="badge ' + (bbr ? 'ok' : 'bad') + '">' + (bbr ? 'BBR فعال است' : 'آخرین اجرا: BBR فعال نشد') + '</span>';
-    }
-  } catch (e) {}
-}
-startResources();
-loadSaved();
+const CIRC=2*Math.PI*42;let dnsChart=null,mirrorCat='all',resourceTimer=null;
+function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');document.getElementById('btn-menu').classList.toggle('open')}
+function closeMenu(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');document.getElementById('btn-menu').classList.remove('open')}
+function goPage(name){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.getElementById('page-'+name).classList.add('active');document.querySelector('.nav-item[data-page="'+name+'"]').classList.add('active');closeMenu();if(name==='dashboard')startResources();else stopResources();if(name==='system')loadSystemPage()}
+function setGauge(id,percent){const el=document.getElementById(id);el.style.strokeDashoffset=CIRC-(CIRC*Math.min(100,Math.max(0,percent))/100);el.style.stroke=percent>=85?'#e63946':(percent>=65?'#f4a261':'#e63946')}
+async function loadResources(){try{const r=await fetch('/api/resources');const j=await r.json();if(!j.ok)return;const d=j.data;document.getElementById('v-cpu').textContent=d.cpu_percent+'%';setGauge('g-cpu',d.cpu_percent);document.getElementById('v-mem').textContent=d.memory.percent+'%';setGauge('g-mem',d.memory.percent);document.getElementById('v-disk').textContent=d.disk.percent+'%';setGauge('g-disk',d.disk.percent);document.getElementById('mem-total').textContent=d.memory.total_mb+' MB';document.getElementById('mem-used').textContent=d.memory.used_mb+' MB';document.getElementById('mem-avail').textContent=d.memory.available_mb+' MB';document.getElementById('disk-total').textContent=d.disk.total_gb+' GB';document.getElementById('disk-used').textContent=d.disk.used_gb+' GB';document.getElementById('disk-free').textContent=d.disk.free_gb+' GB';document.getElementById('load-avg').textContent=d.load['1m']+' / '+d.load['5m']+' / '+d.load['15m'];document.getElementById('net-rx').textContent=d.network.rx_gb+' GB';document.getElementById('net-tx').textContent=d.network.tx_gb+' GB';const s=d.system;document.getElementById('top-meta').textContent=s.hostname+' · '+s.os+' · آپ‌تایم: '+s.uptime}catch(e){console.error(e)}}
+function startResources(){loadResources();if(resourceTimer)clearInterval(resourceTimer);resourceTimer=setInterval(loadResources,4000)}
+function stopResources(){if(resourceTimer){clearInterval(resourceTimer);resourceTimer=null}}
+async function runDnsTest(){const btn=document.getElementById('btn-dns');btn.disabled=true;btn.innerHTML='<span class="spinner"></span> در حال تست...';try{const r=await fetch('/api/dns-test',{method:'POST'});const d=await r.json();if(d.ok)renderDns(d.result);else document.getElementById('dns-list').innerHTML='<span class="badge bad">خطا: '+d.error+'</span>'}catch(e){document.getElementById('dns-list').innerHTML='<span class="badge bad">خطای ارتباط: '+e+'</span>'}btn.disabled=false;btn.textContent='اجرای تست DNS'}
+function renderDns(payload){const results=payload.results||[];const best=payload.best;const listEl=document.getElementById('dns-list');const bestEl=document.getElementById('dns-best');if(best){bestEl.style.display='block';bestEl.innerHTML='<div class="best-banner"><div>بهترین DNS: <strong>'+best.name+'</strong> <span class="ip">('+best.ip+')</span> — میانگین <strong>'+best.avg_ms+' ms</strong></div><button class="btn btn-sm" onclick="applyDns(\''+best.ip+'\')">اعمال این DNS</button></div>'}const maxMs=Math.max.apply(null,results.map(r=>r.avg_ms||0).concat([50]));listEl.innerHTML=results.map(r=>{const pct=r.avg_ms?Math.min(100,(r.avg_ms/maxMs)*100):0;const label=r.avg_ms!=null?r.avg_ms+' ms':'ناموفق';return '<div class="list-row"><span class="name">'+r.name+'</span><span class="ip">'+r.ip+'</span><div class="bar-bg"><div class="bar-fill" style="width:'+pct+'%"></div></div><span class="ms">'+label+'</span><button class="btn btn-sm btn-outline" onclick="applyDns(\''+r.ip+'\')">اعمال</button></div>'}).join('');const ctx=document.getElementById('dnsChart').getContext('2d');if(dnsChart)dnsChart.destroy();dnsChart=new Chart(ctx,{type:'bar',data:{labels:results.map(r=>r.name),datasets:[{label:'میانگین تاخیر (ms)',data:results.map(r=>r.avg_ms||0),backgroundColor:'rgba(230,57,70,0.55)',borderRadius:6}]},options:{responsive:true,scales:{x:{ticks:{color:'#9a8585'},grid:{color:'rgba(255,255,255,.05)'}},y:{ticks:{color:'#9a8585'},grid:{color:'rgba(255,255,255,.05)'}}},plugins:{legend:{labels:{color:'#f1e9e9'}}}})}
+async function applyDns(ip){if(!confirm('DNS سرور به '+ip+' تغییر کند؟'))return;try{const r=await fetch('/api/dns-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({primary:ip})});const d=await r.json();if(d.ok){alert('DNS اعمال شد: '+ip);loadSystemPage()}else alert('خطا: '+d.error)}catch(e){alert('خطای ارتباط: '+e)}}
+function setMirrorCat(cat,el){mirrorCat=cat;document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active')}
+async function runMirrorTest(){const btn=document.getElementById('btn-mirror');btn.disabled=true;btn.innerHTML='<span class="spinner"></span> در حال تست میرورها...';const body=mirrorCat==='all'?{}:{category:mirrorCat};try{const r=await fetch('/api/mirror-test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(d.ok)renderMirrors(d.result);else document.getElementById('mirror-results').innerHTML='<span class="badge bad">خطا: '+d.error+'</span>'}catch(e){document.getElementById('mirror-results').innerHTML='<span class="badge bad">خطای ارتباط: '+e+'</span>'}btn.disabled=false;btn.textContent='اجرای تست میرور'}
+function renderMirrors(payload){const cats=payload.categories||{};const order=['apt','pip','npm'];let html='';for(let i=0;i<order.length;i++){const cat=order[i];if(!cats[cat])continue;const block=cats[cat];const best=block.best;html+='<div class="card" style="margin-bottom:16px"><h3>دسته: '+cat.toUpperCase()+'</h3>';if(best){let applyBtn='';if(cat==='pip'||cat==='npm'){const hostAttr=best.host||'';applyBtn=' <button class="btn btn-sm" onclick="applyMirror(\''+cat+'\',\''+best.url+'\',\''+hostAttr+'\')">اعمال بهترین روی '+(cat==='pip'?'venv':'npm')+'</button>'}else{applyBtn=' <span class="badge warn">اعمال apt دستی است</span>'}html+='<div class="best-banner" style="margin-bottom:10px"><div>بهترین: <strong>'+best.name+'</strong> — '+best.time_ms+' ms <code style="font-size:.75rem;color:var(--muted)">'+best.url+'</code></div>'+applyBtn+'</div>'}const maxMs=Math.max.apply(null,block.results.map(x=>x.time_ms||0).concat([100]));html+=block.results.map(m=>{const pct=m.time_ms?Math.min(100,(m.time_ms/maxMs)*100):0;const label=m.ok?m.time_ms+' ms':(m.error||'ناموفق');const badge=m.ok?'<span class="badge ok">OK</span>':'<span class="badge bad">Fail</span>';let btn='';if(m.ok&&(cat==='pip'||cat==='npm')){const hostAttr=m.host||'';btn='<button class="btn btn-sm btn-outline" onclick="applyMirror(\''+cat+'\',\''+m.url+'\',\''+hostAttr+'\')">اعمال</button>'}return '<div class="list-row"><span class="name">'+m.name+'</span>'+badge+'<div class="bar-bg"><div class="bar-fill" style="width:'+pct+'%"></div></div><span class="ms">'+label+'</span>'+btn+'</div>'}).join('');html+='</div>'}document.getElementById('mirror-results').innerHTML=html||'<p style="color:var(--muted)">نتیجه‌ای نیست.</p>'}
+async function applyMirror(category,url,host){if(category==='pip'){if(!confirm('اعمال میرور pip روی virtualenv پنل؟\n'+url))return}else if(category==='npm'){if(!confirm('رجیستری npm به این آدرس تغییر کند؟\n'+url))return}else{alert('اعمال خودکار apt پشتیبانی نمی‌شود.');return}try{const r=await fetch('/api/mirror-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category:category,url:url,host:host||null,scope:'venv'})});const d=await r.json();if(d.ok)alert('میرور با موفقیت اعمال شد.\n'+(d.result.log||[]).join('\n'));else alert('خطا: '+d.error)}catch(e){alert('خطای ارتباط: '+e)}}
+async function runOptimize(){const btn=document.getElementById('btn-optimize');btn.disabled=true;btn.innerHTML='<span class="spinner"></span> در حال اجرا...';const statusEl=document.getElementById('opt-status');const logEl=document.getElementById('opt-log');statusEl.innerHTML='';try{const r=await fetch('/api/optimize',{method:'POST'});const d=await r.json();if(d.ok){const bbr=d.result.bbr_active;statusEl.innerHTML='<span class="badge '+(bbr?'ok':'bad')+'">'+(bbr?'BBR فعال است':'BBR فعال نشد')+'</span>';logEl.style.display='block';logEl.innerHTML=(d.result.log||[]).map(l=>'> '+l).join('<br>')}else statusEl.innerHTML='<span class="badge bad">خطا: '+d.error+'</span>'}catch(e){statusEl.innerHTML='<span class="badge bad">خطای ارتباط: '+e+'</span>'}btn.disabled=false;btn.textContent='اجرای بهینه‌سازی'}
+async function loadSystemPage(){try{const r=await fetch('/api/resources');const j=await r.json();if(!j.ok)return;const s=j.data.system;document.getElementById('sys-host').textContent=s.hostname;document.getElementById('sys-os').textContent=s.os;document.getElementById('sys-uptime').textContent=s.uptime;document.getElementById('sys-cpu').textContent=s.cpu_cores;document.getElementById('sys-dns').textContent=(s.current_dns&&s.current_dns.length)?s.current_dns.join(', '):'—'}catch(e){}}
+async function loadSaved(){try{const r=await fetch('/api/results');const d=await r.json();if(d.dns_tests&&d.dns_tests.results)renderDns(d.dns_tests);if(d.mirror_tests)renderMirrors(d.mirror_tests);if(d.optimization){const bbr=d.optimization.bbr_active;document.getElementById('opt-status').innerHTML='<span class="badge '+(bbr?'ok':'bad')+'">'+(bbr?'BBR فعال است':'آخرین اجرا: BBR فعال نشد')+'</span>'}}catch(e){}}
+startResources();loadSaved();
 </script>
 </body>
 </html>
