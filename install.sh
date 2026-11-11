@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------------------------
-# Server Optimization & DNS Test Panel — installer
+# Server Optimization & DNS Test Panel — installer (v2)
 # Tested on: Ubuntu 20.04/22.04/24.04, Debian 11/12
 # Usage (as root):
 #   curl -fsSL https://raw.githubusercontent.com/batvin/dnsxoz/main/install.sh | bash
@@ -57,7 +57,7 @@ systemctl daemon-reload
 systemctl enable ${SERVICE_NAME}
 systemctl restart ${SERVICE_NAME}
 
-SERVER_IP=$(curl -fsSL ifconfig.me || hostname -I | awk '{print $1}')
+SERVER_IP=$(curl -fsSL ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
 
 echo ""
 echo "✅ نصب با موفقیت انجام شد!"

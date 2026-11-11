@@ -1,10 +1,11 @@
-# Server Optimization & DNS Test Panel
+# Server Optimization & DNS Test Panel (v2)
 
-یک پنل تحت وب سبک (Flask) که:
+یک پنل تحت وب سبک (Flask) با تم قرمز و منوی همبرگری که:
 
-- سرعت شبکه سرور را بهینه می‌کند (فعال‌سازی BBR، تنظیم TCP buffers، file descriptors و ...)
-- تست DNS روی چند سرور معروف (Cloudflare, Google, Quad9, OpenDNS, Shecan, Electro) انجام می‌دهد و تاخیر هرکدام را اندازه می‌گیرد
-- نتایج را با نمودار و انیمیشن نمایش می‌دهد
+* **داشبورد منابع** — مصرف زنده CPU، رم، دیسک، لود و ترافیک شبکه
+* **تست DNS** — اندازه‌گیری تاخیر روی Cloudflare، Google، Quad9، OpenDNS، Shecan، Electro و انتخاب/اعمال بهترین
+* **تست میرور** — مقایسه سرعت میرورهای apt، pip و npm برای آپدیت سرور و پکیج‌ها
+* **بهینه‌سازی شبکه** — فعال‌سازی BBR، تنظیم TCP buffers و sysctl
 
 ## نصب سریع (روی سرور، با دسترسی root)
 
@@ -33,24 +34,35 @@ sudo python3 app.py
 
 ```bash
 sudo systemctl status server-panel     # وضعیت
-sudo systemctl restart server-panel    # ری‌استارت
+sudo systemctl restart server-panel    # ریاستار	
 journalctl -u server-panel -f          # لاگ زنده
 ```
+
+## بخش‌های پنل
+
+| بخش | توضیح |
+| --- | --- |
+| داشبورد منابع | گیج CPU / رم / دیسک + لود و شبکه (به‌روزرسانی خودکار) |
+| تست DNS و انتخاب | تست latency، نمایش بهترین، دکمه اعمال روی `/etc/resolv.conf` |
+| تست میرور آپدیت | تست apt / pip / npm و نمایش سریع‌ترین |
+| بهینه‌سازی شبکه | BBR + sysctl tweaks |
+| اطلاعات سیستم | hostname، OS، uptime، DNS فعلی |
 
 ## امنیت
 
 این پنل به‌صورت پیش‌فرض بدون احراز هویت است. حتماً یکی از این کارها را انجام دهید:
 
-- محدود کردن پورت 8088 در فایروال (`ufw allow from <YOUR_IP> to any port 8088`)
-- قرار دادن پشت nginx با Basic Auth و SSL (Let's Encrypt)
+* محدود کردن پورت 8088 در فایروال:  
+  `ufw allow from <YOUR_IP> to any port 8088`
+* قرار دادن پشت nginx با Basic Auth و SSL (Let's Encrypt)
 
 ## فایل‌ها
 
 | فایل | توضیح |
-|---|---|
-| `app.py` | بک‌اند Flask (API بهینه‌سازی، تست DNS، اطلاعات سیستم) |
-| `templates/index.html` | رابط کاربری پنل |
-| `install.sh` | اسکریپت نصب خودکار (systemd service) |
+| --- | --- |
+| `app.py` | بک‌اند Flask (API منابع، DNS، میرور، بهینه‌سازی) |
+| `templates/index.html` | رابط کاربری (منوی همبرگری، تم قرمز) |
+| `install.sh` | اسکریپت نصب خودکار (systemd) |
 | `requirements.txt` | وابستگی‌های پایتون |
 
 ## لایسنس
